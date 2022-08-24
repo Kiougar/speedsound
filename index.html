@@ -57,6 +57,7 @@
       (function () {
         const audioCtx = new AudioContext();
         let source; // AudioBufferSourceNode
+        let gainNode; // GainNode
         let play = false;
         let decelerateId;
         let decelerate = true;
@@ -114,6 +115,7 @@
         function loadAudio() {
           const file = 'engine.mp3';
           source = new AudioBufferSourceNode(audioCtx);
+          gainNode = audioCtx.createGain();
           fetch(file)
             .then((response) => {
               if (!response.ok) {
@@ -126,7 +128,8 @@
             .then((audioData) => audioCtx.decodeAudioData(audioData))
             .then((buffer) => {
               source.buffer = buffer;
-              source.connect(audioCtx.destination);
+              source.connect(gainNode);
+              gainNode.connect(audioCtx.destination);
               source.loop = true;
               source.loopStart = 0.4;
               source.loopEnd = 0.6;
@@ -154,7 +157,7 @@
         function setVolume() {
           // const volume = bezier(val.speed / 100, 0.05, 1);
           const volume = 1;
-          if (source) source.volume = volume;
+          if (gainNode) gainNode.gain.value = volume;
           valEl.volume.innerText = `${volume.toFixed(5)}`;
         }
 
