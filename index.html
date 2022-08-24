@@ -15,6 +15,7 @@
 
       input {
         width: 60%;
+        min-width: 10rem;
         margin: 0.5rem 0 1rem;
       }
 
@@ -26,28 +27,28 @@
     </style>
   </head>
   <body>
-    <div><b>Position (m):</b> <span id="posValue">0</span></div>
+    <div><b>Position (m):</b><br /><span id="posValue">0</span></div>
     <hr />
     <div>
-      <label for="speed"><b>Speed (m/s):</b> <span id="speedValue">0</span></label>
+      <label for="speed"><b>Speed (m/s):</b><br /><span id="speedValue">0</span></label>
       <br />
       <input id="speed" type="range" min="0" max="100" value="0" step="1" />
     </div>
     <div>
       <label for="accel">
-        <b>Acceleration (m/s<sup>2</sup>):</b> <span id="accelValue">0</span>
+        <b>Acceleration (m/s<sup>2</sup>):</b><br /><span id="accelValue">0</span>
       </label>
       <br />
       <input id="accel" type="range" min="0" max="100" value="0" step="1" />
     </div>
     <div>
-      <label for="drag"> <b>Drag (m/s<sup>2</sup>):</b> <span id="dragValue">0</span> </label>
+      <label for="drag"> <b>Drag (m/s<sup>2</sup>):</b><br /><span id="dragValue">0</span> </label>
       <br />
       <input id="drag" type="range" min="0" max="100" value="0" step="1" />
     </div>
 
     <div>
-      <button id="button">Play</button>
+      <button id="button">Start</button>
       <div><b>Volume:</b> <span id="volume">1</span></div>
       <div><b>PBR:</b> <span id="pbr">0</span></div>
     </div>
@@ -59,7 +60,7 @@
         let play = false;
         let decelerateId;
         let decelerate = true;
-        let deceleration = 10;
+        let deceleration = 12;
         let oldTs = 0;
         let val = {
           speed: 0,
@@ -88,10 +89,10 @@
           if (play) {
             loadAudio();
             source.start(0);
-            el.btn.innerText = 'Pause';
+            el.btn.innerText = 'Stop';
           } else {
             source.stop(0);
-            el.btn.innerText = 'Play';
+            el.btn.innerText = 'Start';
           }
         });
 
@@ -107,6 +108,8 @@
         });
         el.accel.addEventListener('mousedown', stopDeceleration);
         el.accel.addEventListener('mouseup', startDeceleration);
+        el.accel.addEventListener('touchstart', stopDeceleration);
+        el.accel.addEventListener('touchend', startDeceleration);
 
         function loadAudio() {
           const file = 'engine.mp3';
@@ -122,7 +125,6 @@
             })
             .then((audioData) => audioCtx.decodeAudioData(audioData))
             .then((buffer) => {
-              console.log(buffer);
               source.buffer = buffer;
               source.connect(audioCtx.destination);
               source.loop = true;
@@ -132,22 +134,6 @@
             .catch((error) => {
               console.error(error);
             });
-        }
-
-        function bezier(t, p1, p2) {
-          return 3 * (1 - t) * (1 - t) * t * p1 + 3 * (1 - t) * t * t * p2 + t * t * t;
-        }
-
-        function setVolume() {
-          const volume = bezier(val.speed / 100, 0.05, 1);
-          if (source) source.volume = volume;
-          valEl.volume.innerText = `${volume}`;
-        }
-
-        function setPBR() {
-          const rate = 1 + bezier(val.speed / 100, 0.05, 1);
-          if (source) source.playbackRate.value = rate;
-          valEl.pbr.innerText = `${rate}`;
         }
 
         function stopDeceleration() {
@@ -161,30 +147,47 @@
           }, 500);
         }
 
+        function bezier(t, p1, p2) {
+          return 3 * (1 - t) * (1 - t) * t * p1 + 3 * (1 - t) * t * t * p2 + t * t * t;
+        }
+
+        function setVolume() {
+          // const volume = bezier(val.speed / 100, 0.05, 1);
+          const volume = 1;
+          if (source) source.volume = volume;
+          valEl.volume.innerText = `${volume.toFixed(5)}`;
+        }
+
+        function setPBR() {
+          const rate = 1 + bezier(val.speed / 100, 0.05, 1) + val.accel / 100;
+          if (source) source.playbackRate.value = rate;
+          valEl.pbr.innerText = `${rate.toFixed(5)}`;
+        }
+
         function setDrag(value) {
           value = parseFloat(value);
           val.drag = value;
-          valEl.drag.innerText = `${value}`;
+          valEl.drag.innerText = `${value.toFixed(0)}`;
         }
 
         function setAccel(value) {
           value = Math.max(0, value);
           val.accel = value;
           el.accel.value = value;
-          valEl.accel.innerText = `${value}`;
+          valEl.accel.innerText = `${value.toFixed(3)}`;
         }
 
         function setSpeed(value) {
           value = Math.min(100, Math.max(0, value));
           val.speed = value;
           el.speed.value = value;
-          valEl.speed.innerText = `${value}`;
+          valEl.speed.innerText = `${value.toFixed(3)}`;
         }
 
         function setPos(value) {
           value = parseFloat(value);
           val.pos = value;
-          valEl.pos.innerText = `${value}`;
+          valEl.pos.innerText = `${value.toFixed(3)}`;
         }
 
         function updateAccel(dt) {
@@ -215,7 +218,7 @@
           // update position
           updatePos(dt);
           // update volume
-          // setVolume();
+          setVolume();
           // update PBR
           setPBR();
           requestAnimationFrame(update);
