@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Speed Sound</title>
+  </head>
+  <body>
+    <div>Position (m): <span id="posValue">0</span></div>
+    <hr />
+    <div>
+      <label for="speed">Speed (m/s): <span id="speedValue">0</span></label>
+      <br />
+      <input id="speed" type="range" min="0" max="100" value="0" step="1" />
+    </div>
+    <div>
+      <label for="accel">Acceleration (m/s<sup>2</sup>): <span id="accelValue">0</span></label>
+      <br />
+      <input id="accel" type="range" min="0" max="100" value="0" step="1" />
+    </div>
+    <div>
+      <label for="drag">Drag (m/s<sup>2</sup>): <span id="dragValue">0</span></label>
+      <br />
+      <input id="drag" type="range" min="0" max="100" value="0" step="1" />
+    </div>
+
+    <div>
+      <button id="button">Play</button>
+      <div>Volume: <span id="volume">1</span></div>
+      <div>PBR: <span id="pbr">0</span></div>
+    </div>
+
+    <script>
+      (function () {
+        const audioCtx = new AudioContext();
+        let source; // AudioBufferSourceNode
+        let play = false;
+        let decelerateId;
+        let decelerate = true;
+        let deceleration = 10;
+        let oldTs = 0;
+        let val = {
+          speed: 0,
+          accel: 0,
+          drag: 0,
+          pos: 0,
+          volume: 0,
+        };
+        let el = {
+          speed: document.getElementById('speed'),
+          accel: document.getElementById('accel'),
+          drag: document.getElementById('drag'),
+          btn: document.getElementById('button'),
+        };
+        let valEl = {
+          drag: document.getElementById('dragValue'),
+          accel: document.getElementById('accelValue'),
+          speed: document.getElementById('speedValue'),
+          pos: document.getElementById('posValue'),
+          volume: document.getElementById('volume'),
+          pbr: document.getElementById('pbr'),
+        };
+
+        el.btn.addEventListener('click', () => {
+          play = !play;
+          if (play) {
+            loadAudio();
+            source.start(0);
+            el.btn.innerText = 'Pause';
+          } else {
+            source.stop(0);
+            el.btn.innerText = 'Play';
+          }
+        });
+
+        el.drag.addEventListener('input', (event) => {
+          setDrag(event.target.value);
+        });
+        el.speed.addEventListener('input', (event) => {
+          setSpeed(event.target.value);
+        });
+        el.accel.addEventListener('input', (event) => {
+          stopDeceleration();
+          setAccel(event.target.value);
+        });
+        el.accel.addEventListener('mousedown', stopDeceleration);
+        el.accel.addEventListener('mouseup', startDeceleration);
+
+        function loadAudio() {
+          const file = 'engine.mp3';
+          source = new AudioBufferSourceNode(audioCtx);
+          fetch(file)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(
+                  `Could not fetch "${file}": ${response.status} ${response.statusText}`,
+                );
+              }
+              return response.arrayBuffer();
+            })
+            .then((audioData) => audioCtx.decodeAudioData(audioData))
+            .then((buffer) => {
+              console.log(buffer);
+              source.buffer = buffer;
+              source.connect(audioCtx.destination);
+              source.loop = true;
+              source.loopStart = 0.4;
+              source.loopEnd = 0.6;
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+        }
+
+        function bezier(t, p1, p2) {
+          return 3 * (1 - t) * (1 - t) * t * p1 + 3 * (1 - t) * t * t * p2 + t * t * t;
+        }
+
+        function setVolume() {
+          const volume = bezier(val.speed / 100, 0.05, 1);
+          if (source) source.volume = volume;
+          valEl.volume.innerText = `${volume}`;
+        }
+
+        function setPBR() {
+          const rate = 1 + bezier(val.speed / 100, 0.05, 1);
+          if (source) source.playbackRate.value = rate;
+          valEl.pbr.innerText = `${rate}`;
+        }
+
+        function stopDeceleration() {
+          clearTimeout(decelerateId);
+          decelerate = false;
+        }
+
+        function startDeceleration() {
+          decelerateId = setTimeout(() => {
+            decelerate = true;
+          }, 500);
+        }
+
+        function setDrag(value) {
+          value = parseFloat(value);
+          val.drag = value;
+          valEl.drag.innerText = `${value}`;
+        }
+
+        function setAccel(value) {
+          value = Math.max(0, value);
+          val.accel = value;
+          el.accel.value = value;
+          valEl.accel.innerText = `${value}`;
+        }
+
+        function setSpeed(value) {
+          value = Math.min(100, Math.max(0, value));
+          val.speed = value;
+          el.speed.value = value;
+          valEl.speed.innerText = `${value}`;
+        }
+
+        function setPos(value) {
+          value = parseFloat(value);
+          val.pos = value;
+          valEl.pos.innerText = `${value}`;
+        }
+
+        function updateAccel(dt) {
+          if (!decelerate) return;
+          setAccel(val.accel - deceleration * dt);
+        }
+
+        function updateSpeed(dt) {
+          const delta = val.accel - val.drag;
+          if (val.speed === 0 && delta === 0) return;
+          const value = val.speed + delta * dt;
+          setSpeed(value);
+        }
+
+        function updatePos(dt) {
+          setPos(val.pos + val.speed * dt);
+        }
+
+        function update() {
+          // calculate delta time in seconds
+          const now = new Date().getTime();
+          const dt = (now - oldTs) / 1000;
+          oldTs = now;
+          // update acceleration
+          updateAccel(dt);
+          // update speed
+          updateSpeed(dt);
+          // update position
+          updatePos(dt);
+          // update volume
+          // setVolume();
+          // update PBR
+          setPBR();
+          requestAnimationFrame(update);
+        }
+
+        setSpeed(el.speed.value);
+        setAccel(el.accel.value);
+        setDrag(el.drag.value);
+        update();
+      })();
+    </script>
+  </body>
+</html>

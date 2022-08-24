@@ -1,0 +1,8 @@
+{
+  "name": "speedsound",
+  "version": "0.0.1",
+  "private": true,
+  "devDependencies": {
+    "prettier": "^2.7.1"
+  }
+}
