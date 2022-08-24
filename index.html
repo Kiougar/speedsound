@@ -4,30 +4,52 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Speed Sound</title>
+    <style>
+      html {
+        font-size: 24px;
+      }
+
+      body {
+        margin: 1rem;
+      }
+
+      input {
+        width: 60%;
+        margin: 0.5rem 0 1rem;
+      }
+
+      button {
+        font-size: 1rem;
+        padding: 0.25rem 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+    </style>
   </head>
   <body>
-    <div>Position (m): <span id="posValue">0</span></div>
+    <div><b>Position (m):</b> <span id="posValue">0</span></div>
     <hr />
     <div>
-      <label for="speed">Speed (m/s): <span id="speedValue">0</span></label>
+      <label for="speed"><b>Speed (m/s):</b> <span id="speedValue">0</span></label>
       <br />
       <input id="speed" type="range" min="0" max="100" value="0" step="1" />
     </div>
     <div>
-      <label for="accel">Acceleration (m/s<sup>2</sup>): <span id="accelValue">0</span></label>
+      <label for="accel">
+        <b>Acceleration (m/s<sup>2</sup>):</b> <span id="accelValue">0</span>
+      </label>
       <br />
       <input id="accel" type="range" min="0" max="100" value="0" step="1" />
     </div>
     <div>
-      <label for="drag">Drag (m/s<sup>2</sup>): <span id="dragValue">0</span></label>
+      <label for="drag"> <b>Drag (m/s<sup>2</sup>):</b> <span id="dragValue">0</span> </label>
       <br />
       <input id="drag" type="range" min="0" max="100" value="0" step="1" />
     </div>
 
     <div>
       <button id="button">Play</button>
-      <div>Volume: <span id="volume">1</span></div>
-      <div>PBR: <span id="pbr">0</span></div>
+      <div><b>Volume:</b> <span id="volume">1</span></div>
+      <div><b>PBR:</b> <span id="pbr">0</span></div>
     </div>
 
     <script>
